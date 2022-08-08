@@ -67,12 +67,19 @@ class GraphQLQuerier:
         result = result_id_data.get('data').get('get_result_v2')
         return result.get('result_id'), result.get('job_id')
 
+    def get_queue_by_job(self, job_id: UUID) -> QueryResultData:
+        raw_result = self.post_graph_ql(
+            QueryName.GET_QUEUE_POSITION_BY_JOB,
+            {"job_id": job_id}
+        )
+        return raw_result
+
     def get_result_data_by_job(self, job_id: UUID) -> QueryResultData:
         raw_result = self.post_graph_ql(
             QueryName.FIND_RESULT_DATA_BY_JOB,
             {"job_id": job_id}
         )
-        return self.process_result_data(raw_result)
+        return self.process_job_data(raw_result)
 
     def get_result_data_by_result(self, result_id: int) -> QueryResultData:
         raw_result = self.post_graph_ql(
@@ -97,11 +104,12 @@ class GraphQLQuerier:
         # TODO clean up gross parameters handling
         parameters = [
             param.dict() for param in parameters if type(param) == QueryParameter]
-        self.post_graph_ql(
+        response = self.post_graph_ql(
             QueryName.EXECUTE_QUERY,
             {"query_id": query_id, "parameters": parameters}
         )
-
+        return response['data']['execute_query']['job_id']
+        
     def process_result_data(self, raw_result: dict) -> QueryResultData:
         results = raw_result['data']['query_results']
         errors = [blob.get('error').get('error')
@@ -111,4 +119,15 @@ class GraphQLQuerier:
 
         query_result_data = results[0]
         query_result_data['raw_data'] = raw_result['data']['get_result_by_result_id']
+        return QueryResultData(**query_result_data)
+
+    def process_job_data(self, raw_result: dict) -> QueryResultData:
+        results = raw_result['data']['query_results']
+        errors = [blob.get('error').get('error')
+                  for blob in results if blob.get('error')]
+        if any(errors):
+            raise DuneError('.'.join(errors))
+
+        query_result_data = results[0]
+        query_result_data['raw_data'] = raw_result['data']['get_result_by_job_id']
         return QueryResultData(**query_result_data)

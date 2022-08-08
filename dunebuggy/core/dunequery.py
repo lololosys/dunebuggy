@@ -9,7 +9,7 @@ from dunebuggy.models.query import (
 
 class DuneQuery:
     def __init__(self, query: Query):
-        self.metadata: QueryMetadata = query.metadata
+        self.metadata = None# QueryMetadata = query.metadata
         self.result_data: QueryResultData = query.result_data
         self._df = None
 

@@ -54,7 +54,7 @@ class QueryResultData(BaseModel):
 
 
 class Query(BaseModel):
-    metadata: QueryMetadata
+    #metadata: QueryMetadata
     result_data: QueryResultData
 
 
